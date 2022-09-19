@@ -48,7 +48,7 @@ module.exports.getUserProfileUpdate = (req, res) => {
     .findByIdAndUpdate(
       req.user._id,
       { name, about },
-      { new: true, runValidators: true, upsert: true },
+      { new: true, runValidators: true },
     )
     .orFail(() => {
       const error = new Error(`Пользователь с таким _id ${req.user._id} не найден`);
@@ -69,7 +69,7 @@ module.exports.getUserProfileUpdate = (req, res) => {
 
 module.exports.getAvatarUpdate = (req, res) => {
   const { avatar } = req.body;
-  Users.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+  Users.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .orFail(() => {
       const error = new Error(`Пользователь с таким _id ${req.user._id} не найден`);
       error.statusCode = NOT_FOUND_ERROR;
