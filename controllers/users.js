@@ -1,4 +1,8 @@
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const Users = require('../models/user');
+const ConflictErr = require('../errors/ConflictErr');
+const AuthError = require('../errors/AuthError');
 
 const ERROR_CODE = 400;
 const NOT_FOUND_ERROR = 404;
@@ -29,16 +33,25 @@ module.exports.getUserById = (req, res) => {
     });
 };
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  Users.create({ name, about, avatar })
-    .then((user) => res.send(user))
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, 10)
+    .then((hash) => Users.create({
+      name, about, avatar, email, password: hash,
+    }))
+    .then(() => res.status(200).send({
+      data: {
+        name, about, avatar, email,
+      },
+    }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(ERROR_CODE).send({ message: 'Некорректные данные' });
-      } else {
-        res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      if (err.code === 11000) {
+        next(new ConflictErr('Пользователь с таким Email уже существует'));
+        return;
       }
+      next(err);
     });
 };
 
@@ -85,4 +98,23 @@ module.exports.getAvatarUpdate = (req, res) => {
         res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
       }
     });
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+
+  return Users.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      res.send({ token });
+    })
+    .catch(() => {
+      next(new AuthError('Неверный email или пароль'));
+    });
+};
+
+module.exports.getCurrentUser = (req, res, next) => {
+  Users.findById(req.user._id)
+    .then((user) => res.send(user))
+    .catch(next);
 };
