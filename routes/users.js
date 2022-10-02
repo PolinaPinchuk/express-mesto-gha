@@ -8,9 +8,11 @@ const {
 router.get('/', getAllUser);
 router.get(
   '/:userId',
-  celebrate({ params: Joi.object().keys({ userId: Joi.string().min(24).max(24) }) }),
+  // celebrate({ params: Joi.object().keys({ userId: Joi.string().min(24).max(24) }) }),
+  celebrate({ params: Joi.object().keys({ userId: Joi.string().required().hex().length(24) }) }),
   getUserById,
 );
+
 router.get('/me', getCurrentUser);
 router.post('/', createUser);
 router.patch(
