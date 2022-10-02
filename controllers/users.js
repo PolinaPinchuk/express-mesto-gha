@@ -10,13 +10,9 @@ const {
   created,
 } = require('../constants/statuses');
 
-// const ERROR_CODE = 400;
-// const NOT_FOUND_ERROR = 404;
-// const DEFAULT_ERROR = 500;
-
 module.exports.getAllUser = (req, res, next) => {
   Users.find({})
-    .then((user) => res.send({ data: user }))
+    .then((users) => res.send(users))
     .catch(next);
 };
 
