@@ -1,35 +1,36 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const routerUsers = require('./routes/users');
-const routerCards = require('./routes/cards');
-const { createUser, login } = require('./controllers/users');
+const { errors } = require('celebrate');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const router = require('./routes');
+const HandleErrors = require('./errors/HandleErrors');
 
-const { PORT = 3000 } = process.env;
-mongoose.connect('mongodb://localhost:27017/mestodb');
+const { PORT = 3000, LOCALHOST = 'mongodb://localhost:27017/mestodb' } = process.env;
 const app = express();
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+app.use(helmet());
 
 app.use(bodyParser.json()); // для собирания JSON-формата
 app.use(bodyParser.urlencoded({ extended: true })); // для приёма веб-страниц внутри POST-запроса
 
-// app.use((req, res, next) => {
-//   req.user = {
-//     _id: '63274b6ff0e0642b85a15bcc',
-// вставьте сюда _id созданного в предыдущем пункте пользователя
-//   };
-//   next();
-// });
-app.use('/users', routerUsers);
-app.use('/cards', routerCards);
-
-app.use('/', (req, res) => {
-  res.status(404).send({ message: 'Страница не найдена' });
+mongoose.connect(LOCALHOST, {
+  useNewUrlParser: true,
 });
+
+app.use(router);
+router.use(errors());
+app.use(HandleErrors);
 
 app.listen(PORT, () => {
-  // Если всё работает, консоль покажет, какой порт приложение слушает
   console.log(`App listening on port ${PORT}`);
 });
-
-app.post('/signin', login);
-app.post('/signup', createUser);
