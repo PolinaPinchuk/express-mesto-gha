@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Users = require('../models/user');
 const ConflictErr = require('../errors/ConflictErr');
-const AuthError = require('../errors/AuthError');
+// const AuthError = require('../errors/AuthError');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequestErr = require('../errors/BadRequestErr');
 const {
@@ -96,13 +96,32 @@ module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   return Users.findUserByCredentials(email, password)
+  //     .then((user) => {
+  //       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+  //       res.send({ token });
+  //     })
+  //     .catch(() => {
+  //       next(new AuthError('Неверный email или пароль'));
+  //     });
+  // };
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
-      res.send({ token });
+      res
+        .cookie('jwt', token, {
+          maxAge: 3600000 * 24 * 7,
+          httpOnly: true,
+        })
+        .send({
+          _id: user._id,
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+          email: user.email,
+          token,
+        })
+        .end();
     })
-    .catch(() => {
-      next(new AuthError('Неверный email или пароль'));
-    });
+    .catch(next);
 };
 
 module.exports.getCurrentUser = (req, res, next) => {
