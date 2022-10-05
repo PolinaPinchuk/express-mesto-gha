@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Users = require('../models/user');
 const ConflictErr = require('../errors/ConflictErr');
-const AuthError = require('../errors/AuthError');
+// const AuthError = require('../errors/AuthError');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequestErr = require('../errors/BadRequestErr');
 const {
@@ -78,7 +78,7 @@ module.exports.getUserProfileUpdate = (req, res, next) => {
 
 module.exports.getAvatarUpdate = (req, res, next) => {
   const { avatar } = req.body;
-  Users.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+  Users.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
       res.status(ok).send(user);
@@ -100,9 +100,7 @@ module.exports.login = (req, res, next) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch(() => {
-      next(new AuthError('Неверный email или пароль'));
-    });
+    .catch(next);
 };
 
 module.exports.getCurrentUser = (req, res, next) => {
